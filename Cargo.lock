@@ -1003,13 +1003,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "traox_fish_wrapper_rust"
+name = "traox-fish-wrapper-rust"
 version = "0.1.0"
 dependencies = [
  "futures",
  "rand",
  "reqwest",
  "serde",
+ "serde_json",
  "tokio",
 ]
 

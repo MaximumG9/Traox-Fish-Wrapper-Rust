@@ -1,10 +1,11 @@
+#![allow(non_snake_case)]
 use serde::Deserialize;
 
 pub trait Response {
     fn is_ok(&self) -> bool;
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize,Debug)]
 pub struct SimpleResponse {
     pub status: String
 }
@@ -14,7 +15,18 @@ impl Response for SimpleResponse {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize,Debug)]
+pub struct GambleCheckResponse {
+    pub status: String,
+    pub canAfford: bool
+}
+impl Response for GambleCheckResponse {
+    fn is_ok(&self) -> bool {
+        self.status == "success"
+    }
+}
+
+#[derive(Deserialize,Debug)]
 pub struct FishingResponse {
     pub status: String,
     pub fish: Option<f64>,
@@ -24,7 +36,7 @@ impl Response for FishingResponse {
         self.status == "success"
     }
 }
-#[derive(Deserialize)]
+#[derive(Deserialize,Debug)]
 pub struct LoginResponse {
     pub status: String,
     pub key: Option<String>,
@@ -35,17 +47,27 @@ impl Response for LoginResponse {
     }
 }
 
-/* TODO
-#[derive(Deserialize)]
-pub struct GamblingResponse {
+#[derive(Deserialize,Debug)]
+pub struct GambleResponse {
     pub status: String,
-    pub winnings: f64,
-    pub slot1: String, // Has to be string so "jackpot" is valid
-    pub slot2: String,
-    pub slot3: String
+    pub slot1: serde_json::Value, // Has to be value so "jackpot" is valid
+    pub slot2: serde_json::Value,
+    pub slot3: serde_json::Value,
+    pub winnings: f64
 }
-impl Response for GamblingResponse {
+impl Response for GambleResponse {
     fn is_ok(&self) -> bool {
         self.status == "success"
     }
-}*/
+}
+
+#[derive(Deserialize,Debug)]
+pub struct CheckKeyResponse {
+    pub status: String,
+    pub validKey: bool
+}
+impl Response for CheckKeyResponse {
+    fn is_ok(&self) -> bool {
+        self.status == "success"
+    }
+}

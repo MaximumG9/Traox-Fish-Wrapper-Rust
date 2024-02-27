@@ -5,5 +5,8 @@
 - fishing
 - logging in
 - being online
-## Working on:
 - gambling
+- checking gambling
+- checking keys
+## Working On:
+- creating new accounts

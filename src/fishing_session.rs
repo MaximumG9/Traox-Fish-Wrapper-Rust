@@ -3,6 +3,7 @@ use reqwest::Client;
 use serde::{Serialize, Deserialize};
 use std::fmt;
 use std::error;
+use std::fmt::Debug;
 mod requests;
 mod responses;
 
@@ -17,21 +18,11 @@ impl fmt::Display for UnknownError {
 
 impl error::Error for UnknownError {}
 
-#[derive(Debug, Clone)]
-pub struct SlotParsingError { slot: String }
-
-impl fmt::Display for SlotParsingError {
-    fn fmt(&self,f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "Slot {0} was not parsed correctly (maybe new slot result was added?)",self.slot)
-    }
-}
-
-impl error::Error for SlotParsingError {}
 
 #[derive(Debug)]
 pub enum Error {
-    //SlotParsingError(SlotParsingError),
     UnknownError(UnknownError),
+    JSONError(serde_json::Error),
     ReqwestError(reqwest::Error)
 }
 impl fmt::Display for Error {
@@ -40,12 +31,11 @@ impl fmt::Display for Error {
     }
 }
 
-/* IN PROGRESS
 pub struct GambleResult {
-    slots: [i32; 3],
-    bet: f64,
-    winnings: f64
-}*/
+    pub slots: [i64; 3],
+    pub bet: u128,
+    pub winnings: f64
+}
 
 pub struct FishingSession {
     login_key: String,
@@ -79,12 +69,13 @@ impl FishingSession {
         Ok(())
     }
 
-    async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Response>(client : &Client, url : &str, body : &T) -> Result<U, Error> {
+    async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Response + Debug>(client : &Client, url : &str, body : &T) -> Result<U, Error> {
         let result = client.post("https://traoxfish.us-3.evennode.com/".to_string() + url)
             .json(body)
             .send().await;
         if result.is_ok() {
-            let json_result:Result<U, reqwest::Error> = result.ok().unwrap().json().await;
+            let text = result.unwrap().text().await.ok().unwrap();
+            let json_result:Result<U, serde_json::Error> = serde_json::from_str(text.as_str());
             if json_result.is_ok() {
                 let response: U = json_result.ok().unwrap();
                 if response.is_ok() {
@@ -93,7 +84,7 @@ impl FishingSession {
                     return Err(Error::UnknownError(UnknownError));
                 }
             } else {
-                return Err(Error::ReqwestError(json_result.err().unwrap()));
+                return Err(Error::JSONError(json_result.err().unwrap()));
             }
         } else {
             return Err(Error::ReqwestError(result.err().unwrap()));
@@ -119,48 +110,56 @@ impl FishingSession {
             }).await?;
         Ok(result.fish.unwrap())
     }
-    /* Finish Implementing
-    pub async fn gamble(&self, gamble_amount : f64) -> Result<GambleResult, Error> {
-        let result:responses::GamblingResponse = Self::fetch(&self.client, "fish",
+
+    pub async fn check_key(&self) -> Result<bool,Error> {
+        let result:responses::CheckKeyResponse = Self::fetch(&self.client, "checkkey",
+            &requests::SimpleRequest {
+                loginKey: self.login_key.as_str(),
+                username: self.username.as_str(),
+            }).await?;
+        Ok(result.validKey)
+    }
+
+    pub async fn check_gamble(&self, gamble_amount : u128) -> Result<bool,Error> {
+        let result:responses::GambleCheckResponse = Self::fetch(&self.client, "gamble",
+            &requests::GambleCheckRequest {
+                loginKey: self.login_key.as_str(),
+                username: self.username.as_str(),
+                bet: gamble_amount,
+                check: true
+            }).await?;
+        Ok(result.canAfford)
+    }
+
+    pub async fn gamble(&self, gamble_amount : u128) -> Result<GambleResult, Error> {
+        let result:responses::GambleResponse = Self::fetch(&self.client, "gamble",
             &requests::GambleRequest {
                 loginKey: self.login_key.as_str(),
                 username: self.username.as_str(),
                 bet: gamble_amount
             }).await?;
 
-        let mut slot_one_value = 0;
-        if result.slot1 != "jackpot" {
-            let res = result.slot1.parse();
-            if res.is_ok() {
-                slot_one_value = res.ok().unwrap();
-            } else {
-                return Err(Error::SlotParsingError(SlotParsingError{slot: result.slot1}));
-            }
+        let mut slot_one_value:i64 = 0;
+        if !result.slot1.is_string() {
+            let res = result.slot1.as_i64();
+            slot_one_value = res.unwrap();
         }
-        let mut slot_two_value = 0;
-        if result.slot2 != "jackpot" {
-            let res = result.slot2.parse();
-            if res.is_ok() {
-                slot_two_value = res.ok().unwrap();
-            } else {
-                return Err(Error::SlotParsingError(SlotParsingError{slot: result.slot2}));
-            }
+        let mut slot_two_value:i64 = 0;
+        if !result.slot2.is_string() {
+            let res = result.slot2.as_i64();
+            slot_two_value = res.unwrap();
         }
-        let mut slot_three_value = 0;
-        if result.slot3 != "jackpot" {
-            let res = result.slot3.parse();
-            if res.is_ok() {
-                slot_three_value = res.ok().unwrap();
-            } else {
-                return Err(Error::SlotParsingError(SlotParsingError{slot: result.slot3}));
-            }
+        let mut slot_three_value:i64 = 0;
+        if !result.slot3.is_string() {
+            let res = result.slot3.as_i64();
+            slot_three_value = res.unwrap();
         }
         Ok(GambleResult {
             slots: [slot_one_value,slot_two_value,slot_three_value],
             bet: gamble_amount,
             winnings: result.winnings
         })
-    }*/
+    }
 }
 //Creates a uuid in the form of 
 // xxxxxxxx-xxxx-4xxx-xxxx-xxxxxxxx

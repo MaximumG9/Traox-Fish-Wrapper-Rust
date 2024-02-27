@@ -1,21 +1,27 @@
+#![allow(non_snake_case)]
 use serde::Serialize;
 
-#[allow(non_snake_case)]
 #[derive(Serialize)]
 pub struct SimpleRequest<'a> {
     pub loginKey: &'a str,
     pub username: &'a str
 }
 
-#[allow(non_snake_case)]
 #[derive(Serialize)]
 pub struct GambleRequest<'a> {
-    pub loginKey: &'a str,
     pub username: &'a str,
-    pub bet: f64
+    pub loginKey: &'a str,
+    pub bet: u128
 }
 
-#[allow(non_snake_case)]
+#[derive(Serialize)]
+pub struct GambleCheckRequest<'a> {
+    pub loginKey: &'a str,
+    pub username: &'a str,
+    pub bet: u128,
+    pub check: bool
+}
+
 #[derive(Serialize)]
 pub struct LoginRequest<'a> {
     pub username: &'a str,
