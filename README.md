@@ -8,5 +8,8 @@
 - gambling
 - checking gambling
 - checking keys
-## Working On:
 - creating new accounts
+## Working On:
+- Shop
+- Special fish buying
+- Profile viewing
