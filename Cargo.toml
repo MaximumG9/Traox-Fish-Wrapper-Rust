@@ -1,5 +1,5 @@
 [package]
-name = "traox-fish-wrapper-rust"
+name = "traox-fish"
 version = "0.1.0"
 edition = "2021"
 

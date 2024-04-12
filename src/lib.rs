@@ -33,10 +33,6 @@ pub struct GambleResult {
     pub winnings: f64
 }
 
-pub struct Profile {
-
-}
-
 pub struct FishingSession {
     login_key: String,
     username: String,
@@ -138,6 +134,16 @@ impl FishingSession {
             winnings: result.winnings
         })
     }
+
+    pub async fn view_profile(&self, username : &str) -> Result<responses::ViewProfileResponse, Error> {
+        let result: responses::ViewProfileResponse = fetch(&self.client, "getProfile",
+            &requests::ViewProfileRequest {
+                username: self.username.as_str(),
+                loginKey: self.login_key.as_str(),
+                profile: username
+            }).await?;
+        return Ok(result);
+    }
 }
 
 pub async fn create_account(client : &Client, username : &str, password : &str, rng: ThreadRng) -> Result<(), Error> {
@@ -218,6 +224,8 @@ mod tests {
     fn gamble() { test_gamble(); }
     #[test]
     fn create_acc() { test_create_account(); }
+    #[test]
+    fn view_profile() { test_view_profile(); }
 
     #[tokio::main]
     async fn test_creation() {
@@ -284,5 +292,18 @@ mod tests {
 
         let res = create_account(&client, username.as_str(), "Password123", rng).await;
         assert!(res.is_ok());
+    }
+
+    #[tokio::main]
+    async fn test_view_profile() {
+        let rng = rand::thread_rng();
+        let session_res = FishingSession::new(rng,"GambleTestUnmute","4U'EM)WMHg%46YH").await;
+
+        let session = session_res.unwrap();
+        let _  = session.online().await;
+        let res = session.view_profile("MaximumG99").await;
+        assert!(res.is_ok());
+        let prof = res.ok().unwrap();
+        println!("{prof:?}");
     }
 }

@@ -28,3 +28,10 @@ pub struct LoginRequest<'a> {
     pub password: &'a str,
     pub browserKey: &'a str,
 }
+
+#[derive(Serialize)]
+pub struct ViewProfileRequest<'a> {
+    pub loginKey: &'a str,
+    pub username: &'a str,
+    pub profile: &'a str
+}
