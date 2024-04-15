@@ -22,7 +22,7 @@ impl error::Error for UnknownError {}
 
 #[derive(Debug)]
 pub enum Error {
-    UnknownError(UnknownError),
+    UnknownError(UnknownError), // The server returns an unknown error
     JSONError(serde_json::Error),
     ReqwestError(reqwest::Error)
 }
@@ -31,6 +31,12 @@ pub struct GambleResult {
     pub slots: [i64; 3],
     pub bet: u128,
     pub winnings: f64
+}
+
+impl fmt::Display for GambleResult {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "slots: [{},{},{}], bet: {}, winnings: {}", self.slots[0],self.slots[1],self.slots[2], self.bet, self.winnings)
+    }
 }
 
 pub struct FishingSession {
@@ -46,7 +52,7 @@ impl FishingSession {
         let key_result = Self::get_login_key(&client,username, password, rng).await;
         if key_result.is_ok()  {
             let session = FishingSession {
-                login_key: key_result.ok().unwrap(),
+                login_key: key_result.unwrap(),
                 username: username.to_string(),
                 client: client
             };
@@ -161,7 +167,7 @@ async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Re
         .json(body)
         .send().await;
     if result.is_ok() {
-        let text = result.unwrap().text().await.ok().unwrap();
+        let text = result.unwrap().text().await.unwrap();
         let json_result:Result<U, serde_json::Error> = serde_json::from_str(text.as_str());
         if json_result.is_ok() {
             let response: U = json_result.ok().unwrap();
@@ -200,7 +206,7 @@ fn create_random_uuid(rng: ThreadRng) -> String {
 
 fn create_random_alphanumeric(iter: &mut DistIter<Alphanumeric,ThreadRng, u8>, length: usize) -> String {
     let string : String = iter.take(length).map(char::from).collect();
-    return string.to_lowercase();
+    string.to_lowercase()
 }
 
 #[cfg(test)]
@@ -282,6 +288,8 @@ mod tests {
         let _  = session.online().await;
         let res = session.gamble(1).await;
         assert!(res.is_ok());
+        let gamble_result = res.unwrap();
+        println!("{gamble_result}");
     }
 
     #[tokio::main]
@@ -292,6 +300,7 @@ mod tests {
 
         let res = create_account(&client, username.as_str(), "Password123", rng).await;
         assert!(res.is_ok());
+        println!("{username}")
     }
 
     #[tokio::main]
@@ -303,7 +312,7 @@ mod tests {
         let _  = session.online().await;
         let res = session.view_profile("MaximumG99").await;
         assert!(res.is_ok());
-        let prof = res.ok().unwrap();
+        let prof = res.unwrap();
         println!("{prof:?}");
     }
 }
