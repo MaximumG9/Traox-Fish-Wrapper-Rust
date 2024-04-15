@@ -148,7 +148,7 @@ impl FishingSession {
                 loginKey: self.login_key.as_str(),
                 profile: username
             }).await?;
-        return Ok(result);
+        Ok(result)
     }
 }
 
@@ -172,15 +172,15 @@ async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Re
         if json_result.is_ok() {
             let response: U = json_result.ok().unwrap();
             if response.is_ok() {
-                return Ok(response);
+                Ok(response)
             } else {
-                return Err(Error::UnknownError(UnknownError));
+                Err(Error::UnknownError(UnknownError))
             }
         } else {
-            return Err(Error::JSONError(json_result.err().unwrap()));
+            Err(Error::JSONError(json_result.err().unwrap()))
         }
     } else {
-        return Err(Error::ReqwestError(result.err().unwrap()));
+        Err(Error::ReqwestError(result.err().unwrap()))
     }
 }
 
