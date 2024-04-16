@@ -62,6 +62,7 @@ impl FishingSession {
         }
     }
 
+    // Sends a ping to the server saying the account is online, sent every 333 ms in the normal client
     pub async fn online(&self) -> Result<(), Error> {
         fetch::<requests::SimpleRequest,responses::SimpleResponse>(&self.client, "online",
             &requests::SimpleRequest {
@@ -71,6 +72,7 @@ impl FishingSession {
         Ok(())
     }
 
+    // Gets the login key for a specific username with a specific password using a specific client
     async fn get_login_key(client: &Client, username: &str, password: &str, rng: ThreadRng) -> Result<String, Error> {
         let browser_key = create_random_uuid(rng);
         let result:responses::LoginResponse = fetch(client, "login",
@@ -82,6 +84,7 @@ impl FishingSession {
         Ok(result.key.unwrap())
     }
 
+    // Goes fishing and returns the new amount of fish
     pub async fn fish(&self) -> Result<f64, Error> {
         let result:responses::FishingResponse = fetch(&self.client, "fish",
             &requests::SimpleRequest {
@@ -91,6 +94,7 @@ impl FishingSession {
         Ok(result.fish.unwrap())
     }
 
+    // Checks if the current key for the session is valid
     pub async fn check_key(&self) -> Result<bool,Error> {
         let result:responses::CheckKeyResponse = fetch(&self.client, "checkkey",
             &requests::SimpleRequest {
@@ -100,6 +104,7 @@ impl FishingSession {
         Ok(result.validKey)
     }
 
+    // Checks if a gamble is valid
     pub async fn check_gamble(&self, gamble_amount : u128) -> Result<bool,Error> {
         let result:responses::GambleCheckResponse = fetch(&self.client, "gamble",
             &requests::GambleCheckRequest {
@@ -111,6 +116,7 @@ impl FishingSession {
         Ok(result.canAfford)
     }
 
+    // Gambles a specified amount
     pub async fn gamble(&self, gamble_amount : u128) -> Result<GambleResult, Error> {
         let result:responses::GambleResponse = fetch(&self.client, "gamble",
             &requests::GambleRequest {
@@ -141,14 +147,23 @@ impl FishingSession {
         })
     }
 
+    // Gets general data about the player & game state
+    pub async fn get_data(&self) -> Result<responses::GetDataResponse,Error> {
+        fetch(&self.client, "getData",
+            &requests::SimpleRequest {
+                username: self.username.as_str(),
+                loginKey: self.login_key.as_str(),
+            }).await
+    }
+
+    // Gets the data fror the profile
     pub async fn view_profile(&self, username : &str) -> Result<responses::ViewProfileResponse, Error> {
-        let result: responses::ViewProfileResponse = fetch(&self.client, "getProfile",
+        fetch(&self.client, "getProfile",
             &requests::ViewProfileRequest {
                 username: self.username.as_str(),
                 loginKey: self.login_key.as_str(),
                 profile: username
-            }).await?;
-        Ok(result)
+            }).await
     }
 }
 
