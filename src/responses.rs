@@ -6,6 +6,17 @@ pub trait Response {
 }
 
 #[derive(Deserialize,Debug)]
+pub struct ErrorResponse {
+    pub status: String,
+    pub error: Option<String>
+}
+impl Response for ErrorResponse {
+    fn is_ok(&self) -> bool {
+        false
+    }
+}
+
+#[derive(Deserialize,Debug)]
 pub struct SimpleResponse {
     pub status: String
 }

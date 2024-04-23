@@ -1,5 +1,6 @@
 use rand::{distributions::Alphanumeric, rngs::ThreadRng, Rng, distributions::DistIter};
 use reqwest::Client;
+use responses::ErrorResponse;
 use responses::SimpleResponse;
 use serde::{Serialize, Deserialize};
 use std::fmt;
@@ -9,20 +10,22 @@ mod requests;
 mod responses;
 
 #[derive(Debug, Clone)]
-pub struct UnknownError;
+pub struct APIError {
+    pub error: Option<String> // the server may not give an error message
+}
 
-impl fmt::Display for UnknownError {
+impl fmt::Display for APIError {
     fn fmt(&self,f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "Unknown error occured on API request (maybe you forgot to keep the account online?)")
+        write!(f, "Unknown error occured on API request")
     }
 }
 
-impl error::Error for UnknownError {}
+impl error::Error for APIError {}
 
 
 #[derive(Debug)]
 pub enum Error {
-    UnknownError(UnknownError), // The server returns an unknown error
+    APIError(APIError),
     JSONError(serde_json::Error),
     ReqwestError(reqwest::Error)
 }
@@ -172,7 +175,7 @@ pub async fn create_account(client : &Client, username : &str, password : &str, 
     Ok(())
 }
 
-async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Response + Debug>(client : &Client, url : &str, body : &T) -> Result<U, Error> {
+async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Response>(client : &Client, url : &str, body : &T) -> Result<U, Error> {
     let result = client.post("https://traoxfish.us-3.evennode.com/".to_string() + url)
         .json(body)
         .send().await;
@@ -184,7 +187,15 @@ async fn fetch<T: Serialize + ?Sized, U: for<'a> Deserialize<'a> + responses::Re
             if response.is_ok() {
                 Ok(response)
             } else {
-                Err(Error::UnknownError(UnknownError))
+                // Try to interpret the json as an error response to get a better error message
+                let error_json_result:Result<ErrorResponse, serde_json::Error> = serde_json::from_str(text.as_str());
+                if error_json_result.is_ok() {
+                    Err(Error::APIError(APIError {
+                        error: error_json_result.unwrap().error
+                    }))
+                } else {
+                    Err(Error::JSONError(error_json_result.err().unwrap()))
+                }
             }
         } else {
             Err(Error::JSONError(json_result.err().unwrap()))
