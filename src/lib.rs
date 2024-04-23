@@ -49,17 +49,12 @@ impl FishingSession {
     pub async fn new<'b>(rng: ThreadRng, username : &'b str, password : &'b str) -> Result<FishingSession, Error> {
         let client = Client::new();
 
-        let key_result = Self::get_login_key(&client,username, password, rng).await;
-        if key_result.is_ok()  {
-            let session = FishingSession {
-                login_key: key_result.unwrap(),
-                username: username.to_string(),
-                client: client
-            };
-            Ok(session)
-        } else {
-            Err(key_result.err().unwrap())
-        }
+        let key_result = Self::get_login_key(&client,username, password, rng).await?;
+        Ok(FishingSession {
+            login_key: key_result,
+            username: username.to_string(),
+            client: client
+        })
     }
 
     // Sends a ping to the server saying the account is online, sent every 333 ms in the normal client
@@ -81,7 +76,7 @@ impl FishingSession {
                 password: password,
                 browserKey: browser_key.as_str()
             }).await?;
-        Ok(result.key.unwrap())
+        Ok(result.key)
     }
 
     // Goes fishing and returns the new amount of fish
@@ -91,7 +86,7 @@ impl FishingSession {
                 loginKey: self.login_key.as_str(),
                 username: self.username.as_str()
             }).await?;
-        Ok(result.fish.unwrap())
+        Ok(result.fish)
     }
 
     // Checks if the current key for the session is valid

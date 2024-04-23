@@ -29,7 +29,7 @@ impl Response for GambleCheckResponse {
 #[derive(Deserialize,Debug)]
 pub struct FishingResponse {
     pub status: String,
-    pub fish: Option<f64>,
+    pub fish: f64,
 }
 impl Response for FishingResponse {
     fn is_ok(&self) -> bool {
@@ -39,7 +39,7 @@ impl Response for FishingResponse {
 #[derive(Deserialize,Debug)]
 pub struct LoginResponse {
     pub status: String,
-    pub key: Option<String>,
+    pub key: String,
 }
 impl Response for LoginResponse {
     fn is_ok(&self) -> bool {
